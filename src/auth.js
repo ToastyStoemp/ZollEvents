@@ -74,8 +74,26 @@ export function parseCookies(req) {
   return out;
 }
 export const isAdmin = (req) => tokenValid(parseCookies(req)[COOKIE]);
-export function setAdminCookie(res) {
-  const secure = config.publicBaseUrl.startsWith('https') ? '; Secure' : '';
+
+/**
+ * Is the request actually being served over HTTPS? Direct TLS, or — when the
+ * app trusts its proxy — an `x-forwarded-proto: https` from the TLS terminator
+ * (Caddy/nginx) in front of it. Used to decide the cookie's Secure flag from the
+ * real transport, so a Secure cookie is never sent to an http client that would
+ * silently drop it (which locks the admin out).
+ */
+function requestIsHttps(req) {
+  if (req && req.socket && req.socket.encrypted) return true;
+  const trustProxy = process.env.ZOLLEVENTS_TRUST_PROXY === '1';
+  if (trustProxy && req) {
+    const proto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim().toLowerCase();
+    if (proto === 'https') return true;
+  }
+  return false;
+}
+
+export function setAdminCookie(res, req) {
+  const secure = requestIsHttps(req) ? '; Secure' : '';
   res.setHeader('Set-Cookie', `${COOKIE}=${issueToken()}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${TTL_MS / 1000}${secure}`);
 }
 export function clearAdminCookie(res) {

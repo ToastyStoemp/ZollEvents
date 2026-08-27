@@ -163,7 +163,7 @@ const server = createServer(async (req, res) => {
       saveSetup(patch);
       reloadConfig();
       resetEventsCache();
-      if (firstRun) setAdminCookie(res); // log the new admin straight in
+      if (firstRun) setAdminCookie(res, req); // log the new admin straight in
       return send(res, 200, { ok: true, needsSetup: false });
     }
 
@@ -175,7 +175,7 @@ const server = createServer(async (req, res) => {
       if (loginThrottled(ip)) return send(res, 429, { error: 'Too many attempts — try again shortly.' });
       const body = await readBody(req);
       if (!passwordOk(body.password)) return send(res, 401, { error: 'Wrong password' });
-      setAdminCookie(res);
+      setAdminCookie(res, req);
       return send(res, 200, { ok: true });
     }
     if (method === 'POST' && path === '/api/admin/logout') {
