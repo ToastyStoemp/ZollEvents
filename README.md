@@ -1,6 +1,6 @@
 # ZollEvents
 
-Publishes GET UP GAMES convention events from **one source of truth** — the
+Publishes Phuong Ninjin convention events from **one source of truth** — the
 events you already log in **ZollTool** — as three outputs that update
 automatically:
 
@@ -46,6 +46,32 @@ is required; the rest of the env keys below map 1:1 to the compose file.
 | `ADMIN_PASSWORD` | Enables the `/admin` editor for per-event extras. Blank = disabled. |
 | `ZOLLEVENTS_TRUST_PROXY` | Trust `X-Forwarded-For` behind a proxy (login rate limit). |
 
+### Auto-deploy from GitHub
+
+Every push to `main` runs `.github/workflows/deploy.yml`, which SSHes into the
+server and runs `deploy.sh` — gated on `AUTO_DEPLOY=1` in the server's own `.env`,
+so **pushing to GitHub never touches a server that hasn't opted in locally**:
+
+```sh
+# on the server, one-time
+echo "AUTO_DEPLOY=1" >> .env
+```
+
+Then add these repo secrets on GitHub (Settings → Secrets and variables → Actions):
+
+- `DEPLOY_HOST` — the server's hostname or IP
+- `DEPLOY_USER` — the SSH user to log in as
+- `DEPLOY_SSH_KEY` — a dedicated private key whose public key is in that user's `~/.ssh/authorized_keys`
+- `DEPLOY_PATH` — absolute path to this repo's checkout on the server
+- `DEPLOY_PORT` — optional, only if SSH isn't on port 22
+
+`deploy.sh` runs `git pull --ff-only` then `docker compose up -d --build` (adding
+`docker-compose.override.yml` if present), failing loudly rather than doing
+something surprising if the checkout has diverged. You can also trigger it from
+the **Actions** tab (`workflow_dispatch`). If you already deploy ZollTool this way
+on the same box, reuse the same `DEPLOY_HOST` / `DEPLOY_USER` / `DEPLOY_SSH_KEY` —
+only `DEPLOY_PATH` differs (this repo's own checkout).
+
 ## Event extras (booth, link, blurb)
 
 ZollTool stores name, dates, and city/country. For public-facing extras — a
@@ -86,7 +112,7 @@ limit) and a **Copy** button.
 Add a Custom Liquid section (or edit a template) on any page and paste:
 
 ```html
-<div id="getupgames-events" data-past="true" data-limit="8"></div>
+<div id="zollevents-events" data-past="true" data-limit="8"></div>
 <script src="https://YOUR-ZOLLEVENTS-HOST/embed.js" async></script>
 ```
 

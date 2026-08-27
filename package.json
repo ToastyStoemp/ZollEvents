@@ -1,7 +1,7 @@
 {
   "name": "zollevents",
   "version": "0.1.0",
-  "description": "Publishes GET UP GAMES convention events (read from ZollTool) as a public page, a Shopify embed widget, and an iCal calendar feed.",
+  "description": "Publishes convention events (read from ZollTool) as a public page, a Shopify embed widget, and an iCal calendar feed.",
   "type": "module",
   "scripts": {
     "web": "node src/server.js",

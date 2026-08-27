@@ -38,7 +38,7 @@ export function buildIcs(events, { calName, baseUrl }) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//GET UP GAMES//ZollEvents//EN',
+    'PRODID:-//ZollEvents//ZollEvents//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${esc(calName)}`,

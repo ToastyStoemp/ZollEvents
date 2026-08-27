@@ -39,7 +39,7 @@ export const config = {
   // Public origin this service is reachable at — used for absolute URLs in the
   // embed script and the iCal/webcal links. Defaults to localhost for dev.
   publicBaseUrl: norm(process.env.PUBLIC_BASE_URL) || `http://localhost:${port}`,
-  orgName: process.env.ORG_NAME || 'GET UP GAMES',
+  orgName: process.env.ORG_NAME || 'Phuong Ninjin',
   tagline: process.env.ORG_TAGLINE || 'Where to find us',
   showPast: process.env.SHOW_PAST !== '0',
   pastLimit: Number(process.env.PAST_LIMIT || 12),

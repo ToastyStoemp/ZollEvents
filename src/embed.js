@@ -1,7 +1,7 @@
 /**
  * The Shopify embed widget. A merchant drops this into any page/section:
  *
- *   <div id="getupgames-events" data-past="true" data-limit="8"></div>
+ *   <div id="zollevents-events" data-past="true" data-limit="8"></div>
  *   <script src="https://YOUR-ZOLLEVENTS-HOST/embed.js" async></script>
  *
  * It fetches the live events JSON and renders a self-contained, theme-agnostic
@@ -12,7 +12,7 @@
  */
 
 function widget(BASE) {
-  var targets = document.querySelectorAll('#getupgames-events, [data-getupgames-events]');
+  var targets = document.querySelectorAll('#zollevents-events, [data-zollevents-events]');
   if (!targets.length) return;
   var esc = function (s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {

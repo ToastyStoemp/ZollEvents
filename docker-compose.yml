@@ -23,7 +23,7 @@ services:
       ZOLLTOOL_URL: ${ZOLLTOOL_URL:-}
       ZOLLTOOL_API_TOKEN: ${ZOLLTOOL_API_TOKEN:-}
       # Branding / display.
-      ORG_NAME: ${ORG_NAME:-GET UP GAMES}
+      ORG_NAME: ${ORG_NAME:-Phuong Ninjin}
       ORG_TAGLINE: ${ORG_TAGLINE:-Where to find us}
       SHOW_PAST: ${SHOW_PAST:-1}
       PAST_LIMIT: ${PAST_LIMIT:-12}
