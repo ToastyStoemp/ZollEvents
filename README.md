@@ -17,24 +17,30 @@ extras) — never transactions.
 ## Run
 
 ```bash
-cp .env.example .env      # set ZOLLTOOL_URL + ZOLLTOOL_API_TOKEN + PUBLIC_BASE_URL
-npm run web               # → http://localhost:4300
+npm run web               # → http://localhost:4300, then open /admin
 ```
 
-Mint the token in ZollTool → Settings → **Admin & diagnostics → API access**.
-With no token set, the service still runs and simply shows no events.
+**No `.env` needed.** On first launch, `/admin` shows a **setup wizard** that
+captures the admin password, the ZollTool source (server URL + read token), the
+public base URL, and branding — saved to `data/config.json`. Change any of it
+later from **⚙ Site settings** in the admin. Mint the read token in ZollTool →
+Settings → **Admin & diagnostics → API access**; until a source is set the
+service runs and simply shows no events.
+
+Prefer to preset things (or provision headlessly)? Copy `.env.example` → `.env`
+and set any keys you want — environment variables always override the wizard.
 
 ### Docker
 
 ```bash
-cp .env.example .env      # set PUBLIC_BASE_URL, ZOLLTOOL_URL/TOKEN, ADMIN_PASSWORD
-docker compose up -d --build
+docker compose up -d --build      # then open http://localhost:4300/admin and follow the wizard
 ```
 
-The image is zero-dependency (source + `node`, no build step). The per-event
-overlay (`data/overlay.json` — booth/hall/handle, links, the IG bio template) is
-kept on the `./data` volume, so it survives `--build` redeploys. `PUBLIC_BASE_URL`
-is required; the rest of the env keys below map 1:1 to the compose file.
+**No `.env` needed.** The image is zero-dependency (source + `node`, no build
+step). The first-run wizard's config (`data/config.json`) and the per-event
+overlay (`data/overlay.json` — booth/hall/handle, links, the IG bio template)
+both live on the `./data` volume, so they survive `--build` redeploys. Every env
+key in the compose file is optional and only overrides the wizard when set.
 
 | Env | Purpose |
 |-----|---------|
@@ -45,6 +51,32 @@ is required; the rest of the env keys below map 1:1 to the compose file.
 | `SHOW_PAST` / `PAST_LIMIT` | Past-events section. |
 | `ADMIN_PASSWORD` | Enables the `/admin` editor for per-event extras. Blank = disabled. |
 | `ZOLLEVENTS_TRUST_PROXY` | Trust `X-Forwarded-For` behind a proxy (login rate limit). |
+
+### Behind Caddy / a reverse proxy
+
+The container is always named `zollevents` (pinned in `docker-compose.yml`), so a
+separate Caddy container can `reverse_proxy zollevents:4300` by name — but only once
+they share a Docker network. Don't hard-code that network in the tracked compose
+(it would break `up` where the network doesn't exist, and conflict on `git pull`).
+Instead create the shared network once and join it from a **gitignored**
+`docker-compose.override.yml` on the server (which `deploy.sh` picks up automatically):
+
+```sh
+docker network create zollnet   # once, shared by Caddy + every app
+```
+
+```yaml
+# docker-compose.override.yml (gitignored, per-host)
+services:
+  zollevents:
+    networks: [default, zollnet]
+networks:
+  zollnet:
+    external: true
+```
+
+Put Caddy on `zollnet` too, then in your Caddyfile: `reverse_proxy zollevents:4300`
+(set `PUBLIC_BASE_URL` to the public HTTPS origin Caddy serves).
 
 ### Auto-deploy from GitHub
 

@@ -110,10 +110,37 @@ input,textarea{width:100%;background:var(--bg);border:1px solid var(--border);bo
 var app=document.getElementById('app');
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fmtRange(s,e){var d=new Date(s+'T00:00:00');if(isNaN(d))return '';return s+(e&&e!==s?' → '+e:'');}
+function val(id){var el=document.getElementById(id);return el?el.value:'';}
 async function boot(){
-  var me=await fetch('/api/admin/me').then(r=>r.json()).catch(()=>({admin:false}));
+  var setup=await fetch('/api/setup').then(r=>r.json()).catch(function(){return {needsSetup:false};});
+  if(setup.needsSetup){renderSetup();return;}
+  var me=await fetch('/api/admin/me').then(r=>r.json()).catch(function(){return {admin:false};});
   if(!me.admin){renderLogin();return;}
-  renderEditor(await fetch('/api/admin/data').then(r=>r.json()));
+  // re-fetch setup (now authed) to get the editable site settings
+  var s2=await fetch('/api/setup').then(r=>r.json()).catch(function(){return {};});
+  var data=await fetch('/api/admin/data').then(r=>r.json());
+  data._settings=s2.settings||{};
+  renderEditor(data);
+}
+function renderSetup(err){
+  app.innerHTML='<div class="login" style="max-width:460px"><h2 style="margin-bottom:6px">Welcome — first-time setup</h2>'+
+    '<div class="msg" style="margin-bottom:14px">Configure ZollEvents once here. Everything is editable later from the admin.</div>'+
+    '<label>Admin password *</label><input id="su_pw" type="password" autocomplete="new-password">'+
+    '<label>ZollTool server URL</label><input id="su_url" placeholder="https://sync.example.com">'+
+    '<label>ZollTool API token (zt_…)</label><input id="su_token" type="password" placeholder="zt_…">'+
+    '<label>Public base URL (the public HTTPS origin)</label><input id="su_base" placeholder="https://events.example.com">'+
+    '<label>Organisation name</label><input id="su_org" placeholder="Phuong Ninjin">'+
+    '<label>Tagline</label><input id="su_tag" placeholder="Where to find us">'+
+    '<button class="btn" style="width:100%;margin-top:16px" onclick="submitSetup()">Save &amp; continue</button>'+
+    (err?'<div class="msg" style="color:#e11d48;margin-top:8px">'+esc(err)+'</div>':'')+'</div>';
+  var pw=document.getElementById('su_pw');if(pw)pw.focus();
+}
+async function submitSetup(){
+  var body={adminPassword:val('su_pw'),zolltoolUrl:val('su_url'),apiToken:val('su_token'),
+    publicBaseUrl:val('su_base'),orgName:val('su_org'),tagline:val('su_tag')};
+  var r=await fetch('/api/setup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  if(r.ok){boot();}
+  else{var e=await r.json().catch(function(){return {};});renderSetup(e.error||'Setup failed');}
 }
 function renderLogin(err){
   app.innerHTML='<div class="login"><h2 style="margin-bottom:6px">Admin</h2>'+
@@ -128,10 +155,11 @@ async function login(){
   var r=await fetch('/api/admin/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:pw})});
   if(r.ok)boot();else renderLogin('Wrong password.');
 }
-var _settings={};
+var _settings={},_site={};
 function renderEditor(data){
   var ov=(data.overlay&&data.overlay.events)||{};
   _settings=(data.overlay&&data.overlay.settings)||{};
+  _site=data._settings||{};
   var events=(data.events||[]).filter(function(e){return !e.deletedAt;}).sort(function(a,b){return (b.dateStart||'').localeCompare(a.dateStart||'');});
   var rows=events.map(function(e){
     var o=ov[e.id]||{};
@@ -151,9 +179,40 @@ function renderEditor(data){
     '<a class="btn ghost" href="/" target="_blank">View page</a>'+
     '<button class="btn ghost" onclick="logout()">Log out</button>'+
     '<span id="msg" class="msg"></span></div>'+
-    igPanel()+(rows||'<div class="empty">No events yet.</div>');
+    sitePanel(_site)+igPanel()+(rows||'<div class="empty">No events yet.</div>');
   document.querySelectorAll('.row[data-id] [data-f]').forEach(function(i){i.addEventListener('input',schedulePreview);});
   refreshPreview();
+}
+function sitePanel(s){
+  s=s||{};var lock=s.envLocked||{};
+  function line(id,label,value,ph,locked,type){
+    return '<div class="full"><label>'+label+(locked?' <span class="msg">(set by env)</span>':'')+'</label>'+
+      '<input id="'+id+'" type="'+(type||'text')+'" value="'+esc(value||'')+'"'+(ph?' placeholder="'+esc(ph)+'"':'')+(locked?' disabled':'')+'></div>';
+  }
+  return '<div class="row"><h3>⚙ Site settings</h3>'+
+    '<div class="sub">Source, branding, and the public URL. Fields pinned by an environment variable are read-only.</div>'+
+    '<div class="fields">'+
+      line('st_url','ZollTool server URL',s.zolltoolUrl,'https://sync.example.com',lock.zolltoolUrl)+
+      '<div class="full"><label>ZollTool API token'+(lock.apiToken?' <span class="msg">(set by env)</span>':'')+'</label>'+
+        '<input id="st_token" type="password" placeholder="'+(s.hasToken?'•••••••• (unchanged)':'zt_…')+'"'+(lock.apiToken?' disabled':'')+'></div>'+
+      line('st_base','Public base URL',s.publicBaseUrl,'https://events.example.com',lock.publicBaseUrl)+
+      line('st_org','Organisation name',s.orgName,'Phuong Ninjin',lock.orgName)+
+      line('st_tag','Tagline',s.tagline,'Where to find us',lock.tagline)+
+      '<div class="full"><label>Change admin password (optional)</label><input id="st_pw" type="password" autocomplete="new-password" placeholder="leave blank to keep current"></div>'+
+    '</div>'+
+    '<div style="margin-top:10px"><button class="btn" type="button" onclick="saveSite()">Save settings</button> <span id="siteMsg" class="msg"></span></div></div>';
+}
+async function saveSite(){
+  var body={};
+  [['st_url','zolltoolUrl'],['st_base','publicBaseUrl'],['st_org','orgName'],['st_tag','tagline']].forEach(function(p){
+    var el=document.getElementById(p[0]);if(el&&!el.disabled)body[p[1]]=el.value.trim();
+  });
+  var tok=document.getElementById('st_token');if(tok&&!tok.disabled&&tok.value.trim())body.apiToken=tok.value.trim();
+  var pw=val('st_pw');if(pw)body.adminPassword=pw;
+  var m=document.getElementById('siteMsg');m.textContent='Saving…';
+  var r=await fetch('/api/setup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  if(r.ok){m.textContent='Saved ✓';var st=document.getElementById('st_pw');if(st)st.value='';}
+  else{var e=await r.json().catch(function(){return {};});m.textContent=e.error||'Save failed';}
 }
 function igPanel(){
   var origin=location.origin;

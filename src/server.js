@@ -1,13 +1,14 @@
 import { createServer } from 'node:http';
-import { config, sourceConfigured } from './config.js';
-import { fetchEvents } from './zolltool.js';
+import { config, sourceConfigured, reloadConfig } from './config.js';
+import { fetchEvents, resetEventsCache } from './zolltool.js';
+import { getSetup, saveSetup, hasSetup } from './setup-store.js';
 import { getOverlay, saveOverlay } from './overlay.js';
 import { splitEvents, allEvents } from './events.js';
 import { buildIcs } from './ics.js';
 import { embedScript } from './embed.js';
 import { publicPage, adminPage } from './page.js';
 import { buildBio, currentEvent } from './instagram.js';
-import { isAdmin, passwordOk, setAdminCookie, clearAdminCookie } from './auth.js';
+import { isAdmin, passwordOk, setAdminCookie, clearAdminCookie, hashPassword } from './auth.js';
 
 /**
  * ZollEvents: reads ZollTool events (via a scoped zt_ token) and republishes
@@ -112,6 +113,58 @@ const server = createServer(async (req, res) => {
       const ics = buildIcs(allEvents(raw, overlay), { calName: `${config.orgName} events`, baseUrl: config.publicBaseUrl });
       res.writeHead(200, { 'content-type': 'text/calendar; charset=utf-8', 'content-disposition': 'inline; filename="events.ics"', ...PUBLIC_CORS });
       return res.end(ics);
+    }
+
+    // ── First-run setup wizard + site settings ──
+    if (method === 'GET' && path === '/api/setup') {
+      const out = { needsSetup: !hasSetup() };
+      if (isAdmin(req)) {
+        out.settings = {
+          zolltoolUrl: config.zolltoolUrl,
+          hasToken: !!config.apiToken,
+          publicBaseUrl: config.publicBaseUrl,
+          orgName: config.orgName,
+          tagline: config.tagline,
+          showPast: config.showPast,
+          pastLimit: config.pastLimit,
+          // Values pinned by an environment variable can't be changed here.
+          envLocked: {
+            zolltoolUrl: !!process.env.ZOLLTOOL_URL,
+            apiToken: !!process.env.ZOLLTOOL_API_TOKEN,
+            publicBaseUrl: !!process.env.PUBLIC_BASE_URL,
+            orgName: !!process.env.ORG_NAME,
+            tagline: !!process.env.ORG_TAGLINE,
+          },
+        };
+      }
+      return send(res, 200, out);
+    }
+    if (method === 'POST' && path === '/api/setup') {
+      const firstRun = !hasSetup();
+      if (!firstRun && !isAdmin(req)) return send(res, 401, { error: 'Not authenticated' });
+      if (firstRun && loginThrottled(clientIp(req))) {
+        return send(res, 429, { error: 'Too many attempts — try again shortly.' });
+      }
+      const body = await readBody(req);
+      const str = (v) => (typeof v === 'string' ? v.trim() : '');
+      const patch = {};
+      if (typeof body.zolltoolUrl === 'string') patch.zolltoolUrl = str(body.zolltoolUrl).replace(/\/+$/, '');
+      if (str(body.apiToken)) patch.apiToken = str(body.apiToken);
+      if (typeof body.publicBaseUrl === 'string') patch.publicBaseUrl = str(body.publicBaseUrl).replace(/\/+$/, '');
+      if (typeof body.orgName === 'string') patch.orgName = str(body.orgName);
+      if (typeof body.tagline === 'string') patch.tagline = str(body.tagline);
+      if (typeof body.showPast === 'boolean') patch.showPast = body.showPast;
+      if (body.pastLimit != null && !Number.isNaN(Number(body.pastLimit))) patch.pastLimit = Number(body.pastLimit);
+      const pw = str(body.adminPassword);
+      if (firstRun || pw) {
+        if (pw.length < 8) return send(res, 400, { error: 'Admin password must be at least 8 characters.' });
+        patch.adminHash = hashPassword(pw);
+      }
+      saveSetup(patch);
+      reloadConfig();
+      resetEventsCache();
+      if (firstRun) setAdminCookie(res); // log the new admin straight in
+      return send(res, 200, { ok: true, needsSetup: false });
     }
 
     // ── Admin ──

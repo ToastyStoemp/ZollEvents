@@ -7,6 +7,11 @@ import { config, sourceConfigured } from './config.js';
 
 let cache = { at: 0, events: null };
 
+/** Drop the cached events so the next fetch uses freshly-changed config. */
+export function resetEventsCache() {
+  cache = { at: 0, events: null };
+}
+
 export async function fetchEvents() {
   const now = Date.now();
   if (cache.events && now - cache.at < config.eventsTtlMs) return cache.events;

@@ -3,8 +3,26 @@
  * ADMIN_PASSWORD) and a stateless HMAC-signed session cookie. Overlay data is
  * public-facing anyway, so this just keeps the editor from being world-writable.
  */
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHmac, timingSafeEqual, scryptSync, randomBytes } from 'node:crypto';
 import { config } from './config.js';
+import { getSetup } from './setup-store.js';
+
+/** Hash a password for storage: "scrypt$<saltHex>$<hashHex>". */
+export function hashPassword(pw) {
+  const salt = randomBytes(16);
+  const dk = scryptSync(String(pw), salt, 32);
+  return `scrypt$${salt.toString('hex')}$${dk.toString('hex')}`;
+}
+function verifyPassword(pw, stored) {
+  try {
+    const [, saltHex, hashHex] = String(stored).split('$');
+    const dk = scryptSync(String(pw), Buffer.from(saltHex, 'hex'), 32);
+    const want = Buffer.from(hashHex, 'hex');
+    return want.length === dk.length && timingSafeEqual(want, dk);
+  } catch {
+    return false;
+  }
+}
 
 const COOKIE = 'ze_admin';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -17,6 +35,10 @@ function sign(payload) {
 }
 
 export function passwordOk(pw) {
+  // Prefer the wizard's stored admin hash; fall back to an env ADMIN_PASSWORD
+  // (headless / legacy) when the wizard hasn't been used.
+  const setup = getSetup();
+  if (setup.adminHash) return verifyPassword(pw, setup.adminHash);
   const a = Buffer.from(String(pw || ''));
   const b = Buffer.from(String(config.adminPassword || ''));
   return !!config.adminPassword && a.length === b.length && timingSafeEqual(a, b);
