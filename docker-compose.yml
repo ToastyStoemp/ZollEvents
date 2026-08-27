@@ -1,0 +1,36 @@
+# Run from the repo root:  docker compose up -d --build
+#
+# Put the values below in a .env file next to this compose file (gitignored).
+# This service is PUBLIC-facing (Shopify + calendar apps fetch it) — put it
+# behind a TLS reverse proxy and set PUBLIC_BASE_URL to the HTTPS origin.
+services:
+  zollevents:
+    container_name: zollevents
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '4300:4300'
+    volumes:
+      - ./data:/data
+    environment:
+      PORT: 4300
+      ZOLLEVENTS_DATA_DIR: /data
+      # Required — the public origin this service is reachable at (used to build
+      # the embed script, iCal/webcal, and /instagram.txt URLs).
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?set PUBLIC_BASE_URL in .env}
+      # Source: ZollTool read API + a scoped, read-only zt_ token.
+      ZOLLTOOL_URL: ${ZOLLTOOL_URL:-}
+      ZOLLTOOL_API_TOKEN: ${ZOLLTOOL_API_TOKEN:-}
+      # Branding / display.
+      ORG_NAME: ${ORG_NAME:-GET UP GAMES}
+      ORG_TAGLINE: ${ORG_TAGLINE:-Where to find us}
+      SHOW_PAST: ${SHOW_PAST:-1}
+      PAST_LIMIT: ${PAST_LIMIT:-12}
+      EVENTS_TTL_MS: ${EVENTS_TTL_MS:-300000}
+      # Set a password to enable the /admin editor (per-event extras + IG bio).
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      # Trust X-Forwarded-For (login rate limit) — enable behind a reverse proxy.
+      ZOLLEVENTS_TRUST_PROXY: ${ZOLLEVENTS_TRUST_PROXY:-1}
+    restart: unless-stopped
