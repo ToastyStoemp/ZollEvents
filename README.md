@@ -144,13 +144,16 @@ limit) and a **Copy** button.
 Add a Custom Liquid section (or edit a template) on any page and paste:
 
 ```html
-<div id="zollevents-events" data-past="true" data-limit="8"></div>
+<div id="zollevents-events" data-limit="8"></div>
 <script src="https://YOUR-ZOLLEVENTS-HOST/embed.js" async></script>
 ```
 
-Options via data-attributes on the div: `data-limit` (max upcoming shown),
-`data-past="true"` (also list past events), `data-heading="Catch us at…"`.
-The widget is self-contained and inherits your theme's font/colors.
+A clean "where to find us" card: one row per **upcoming** event with a date
+chip, the name, its dates, and the **country / city** (plus hall & booth). Only
+upcoming events are shown. Options via data-attributes: `data-limit` (max shown,
+0/absent = all), `data-heading="Catch us at…"` (title), `data-max-width` (card
+width in px, default 640 — the card is centered in its container). The widget is
+self-contained and inherits your theme's font.
 
 ## Calendar subscription
 
