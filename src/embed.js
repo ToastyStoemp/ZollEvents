@@ -44,21 +44,23 @@ function widget(BASE) {
     var st = document.createElement('style');
     st.id = 'zev-style';
     st.textContent =
-      '.zev{--zev-fg:#3f3a37;--zev-muted:#7c7671;--zev-chip:#ece9e6;--zev-line:#e6e2de;--zev-accent:#c2453a;' +
-        'font-family:inherit;color:var(--zev-fg);background:#faf9f8;border:1px solid var(--zev-line);border-radius:12px;overflow:hidden;max-width:640px;margin:0 auto}' +
+      '.zev{--zev-fg:#1f2d3a;--zev-muted:#77716b;--zev-chip:#e6a83c;--zev-chip-fg:#ffffff;--zev-line:#efe4bf;' +
+        '--zev-head-bg:#f6c85f;--zev-head-fg:#1f2d3a;--zev-body-bg:#fdf8e2;' +
+        '--zev-now-fg:#4e8a3f;--zev-now-bg:#e2f0d4;--zev-now-border:#a9cf8e;' +
+        'font-family:inherit;color:var(--zev-fg);background:var(--zev-body-bg);border:1px solid var(--zev-line);border-radius:12px;overflow:hidden;max-width:640px;margin:0 auto}' +
       '.zev *{box-sizing:border-box}' +
-      '.zev-head{padding:15px 18px 12px;border-bottom:1px solid var(--zev-line);font-weight:700;font-size:1.05em}' +
+      '.zev-head{padding:15px 18px 12px;background:var(--zev-head-bg);color:var(--zev-head-fg);border-bottom:1px solid rgba(0,0,0,.12);font-weight:700;font-size:1.05em}' +
       '.zev-row{display:flex;gap:14px;align-items:flex-start;padding:14px 18px}' +
       '.zev-row + .zev-row{border-top:1px solid var(--zev-line)}' +
-      '.zev-chip{flex:none;width:52px;height:52px;background:var(--zev-chip);color:var(--zev-fg);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}' +
+      '.zev-chip{flex:none;width:52px;height:52px;background:var(--zev-chip);color:var(--zev-chip-fg);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}' +
       '.zev-d{font-size:1.4em;font-weight:700}' +
-      '.zev-m{font-size:.58em;letter-spacing:.1em;margin-top:3px;color:var(--zev-muted)}' +
+      '.zev-m{font-size:.58em;letter-spacing:.1em;margin-top:3px;color:var(--zev-chip-fg);opacity:.9}' +
       '.zev-body{min-width:0;flex:1}' +
       '.zev-name{font-weight:700;font-size:1.02em}' +
       '.zev-meta{display:flex;align-items:center;gap:7px;color:var(--zev-muted);font-size:.86em;margin-top:5px}' +
       '.zev-ic{flex:none;opacity:.7}' +
       '.zev-loc{color:var(--zev-fg)}' +
-      '.zev-now{display:inline-block;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--zev-accent);border:1px solid var(--zev-accent);border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}' +
+      '.zev-now{display:inline-block;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--zev-now-fg);background:var(--zev-now-bg);border:1px solid var(--zev-now-border);border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}' +
       '.zev-link{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:.85em;font-weight:600;color:var(--zev-fg);text-decoration:none;border-bottom:1px solid currentColor}' +
       '.zev-empty{padding:20px 18px;color:var(--zev-muted);font-size:.9em}';
     document.head.appendChild(st);
