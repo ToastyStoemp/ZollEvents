@@ -6,6 +6,9 @@
 
 import { countryFlag } from './flags.js';
 
+/** How many days ahead still counts as "soon" (imminent) for grouping. */
+const SOON_DAYS = 14;
+
 function toDate(s) {
   return s ? new Date(`${s}T00:00:00`) : null;
 }
@@ -38,6 +41,9 @@ function publicOne(e, ovEvents, today) {
     // (ZollTool's 'active' status only marks the device's current sell event, not
     // whether the event is actually running today.)
     ongoing: startD && endD ? startD <= today && today <= endD : false,
+    // "Soon" = starts within the next SOON_DAYS (and not already running). Used to
+    // group the imminent events apart from ones further out.
+    soon: startD ? startD > today && startD - today <= SOON_DAYS * 86400000 : false,
   };
 }
 

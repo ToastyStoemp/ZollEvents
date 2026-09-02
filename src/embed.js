@@ -47,6 +47,7 @@ function widget(BASE) {
       '.zev{--zev-fg:#1f2d3a;--zev-muted:#77716b;--zev-chip:#e6a83c;--zev-chip-fg:#ffffff;--zev-line:#efe4bf;' +
         '--zev-head-bg:#f6c85f;--zev-head-fg:#1f2d3a;--zev-body-bg:#fdf8e2;' +
         '--zev-now-fg:#4e8a3f;--zev-now-bg:#e2f0d4;--zev-now-border:#a9cf8e;' +
+        '--zev-soon-fg:#8a5a00;--zev-soon-bg:#fdeecb;--zev-soon-border:#eaca7f;' +
         'font-family:inherit;color:var(--zev-fg);background:var(--zev-body-bg);border:1px solid var(--zev-line);border-radius:12px;overflow:hidden;max-width:640px;margin:0 auto}' +
       '.zev *{box-sizing:border-box}' +
       '.zev-head{padding:15px 18px 12px;background:var(--zev-head-bg);color:var(--zev-head-fg);border-bottom:1px solid rgba(0,0,0,.12);font-weight:700;font-size:1.05em}' +
@@ -61,6 +62,8 @@ function widget(BASE) {
       '.zev-ic{flex:none;opacity:.7}' +
       '.zev-loc{color:var(--zev-fg)}' +
       '.zev-now{display:inline-block;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--zev-now-fg);background:var(--zev-now-bg);border:1px solid var(--zev-now-border);border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}' +
+      '.zev-soon{display:inline-block;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--zev-soon-fg);background:var(--zev-soon-bg);border:1px solid var(--zev-soon-border);border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle}' +
+      '.zev-sep{padding:7px 18px 5px;font-size:.66em;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--zev-muted);background:rgba(0,0,0,.02);border-top:1px solid var(--zev-line)}' +
       '.zev-link{display:inline-flex;align-items:center;gap:5px;margin-top:8px;font-size:.85em;font-weight:600;color:var(--zev-fg);text-decoration:none;border-bottom:1px solid currentColor}' +
       '.zev-empty{padding:20px 18px;color:var(--zev-muted);font-size:.9em}';
     document.head.appendChild(st);
@@ -70,7 +73,8 @@ function widget(BASE) {
     var s = d0(ev.start);
     var chip = '<div class="zev-chip"><span class="zev-d">' + (s ? s.getDate() : '') + '</span>' +
       '<span class="zev-m">' + (s ? MON[s.getMonth()].toUpperCase() : '') + '</span></div>';
-    var now = ev.ongoing ? '<span class="zev-now">Now</span>' : '';
+    var now = ev.ongoing ? '<span class="zev-now">Now</span>'
+      : ev.soon ? '<span class="zev-soon">Soon</span>' : '';
     // Where — the point of the widget: country/city, then hall & booth if known.
     var loc = [ev.city, ev.country].filter(Boolean).map(esc).join(', ');
     if (ev.flag) loc = loc ? ev.flag + ' ' + loc : ev.flag; // ev.flag is an emoji, safe as-is
@@ -93,8 +97,20 @@ function widget(BASE) {
       var limit = parseInt(el.getAttribute('data-limit') || '0', 10);
       var heading = el.getAttribute('data-heading') || 'Upcoming events';
       var shown = limit > 0 ? up.slice(0, limit) : up;
-      var body = shown.length ? shown.map(row).join('')
-        : '<div class="zev-empty">No upcoming events right now — check back soon.</div>';
+      // Events are sorted ascending, so the imminent ones (now / soon) come first.
+      // Drop a "Later" divider once, at the boundary to the events further out.
+      var body = '';
+      if (shown.length) {
+        var wasImminent = null;
+        shown.forEach(function (ev) {
+          var imminent = !!(ev.ongoing || ev.soon);
+          if (wasImminent === true && !imminent) body += '<div class="zev-sep">Later</div>';
+          body += row(ev);
+          wasImminent = imminent;
+        });
+      } else {
+        body = '<div class="zev-empty">No upcoming events right now — check back soon.</div>';
+      }
       el.innerHTML = '<div class="zev"><div class="zev-head">' + esc(heading) + '</div>' + body + '</div>';
       var mw = el.getAttribute('data-max-width');
       if (mw) { var c = el.querySelector('.zev'); if (c) c.style.maxWidth = /^[0-9]+$/.test(mw) ? mw + 'px' : mw; }
