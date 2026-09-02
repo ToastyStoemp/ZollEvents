@@ -70,7 +70,7 @@ function widget(BASE) {
     var s = d0(ev.start);
     var chip = '<div class="zev-chip"><span class="zev-d">' + (s ? s.getDate() : '') + '</span>' +
       '<span class="zev-m">' + (s ? MON[s.getMonth()].toUpperCase() : '') + '</span></div>';
-    var now = ev.status === 'active' ? '<span class="zev-now">Now</span>' : '';
+    var now = ev.ongoing ? '<span class="zev-now">Now</span>' : '';
     // Where — the point of the widget: country/city, then hall & booth if known.
     var loc = [ev.city, ev.country].filter(Boolean).map(esc).join(', ');
     if (ev.flag) loc = loc ? ev.flag + ' ' + loc : ev.flag; // ev.flag is an emoji, safe as-is

@@ -48,7 +48,7 @@ footer{margin-top:48px;text-align:center;color:var(--muted);font-size:.72rem}
 `;
 
 function card(ev) {
-  const now = ev.status === 'active' ? '<span class="badge">Happening now</span>' : '';
+  const now = ev.ongoing ? '<span class="badge">Happening now</span>' : '';
   const loc = place(ev) ? `<div class="meta">${place(ev)}</div>` : '';
   const bh = [ev.hall ? `Hall ${h(ev.hall)}` : '', ev.booth ? `Booth ${h(ev.booth)}` : ''].filter(Boolean).join(' · ');
   const booth = bh ? `<div class="meta">${bh}</div>` : '';

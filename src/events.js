@@ -15,6 +15,7 @@ function publicOne(e, ovEvents, today) {
   const ov = ovEvents[e.id] || {};
   const start = e.dateStart;
   const end = e.dateEnd || e.dateStart;
+  const startD = toDate(start);
   const endD = toDate(end);
   return {
     id: e.id,
@@ -33,6 +34,10 @@ function publicOne(e, ovEvents, today) {
     hero: ov.hero || '',
     hidden: !!ov.hidden,
     past: endD ? endD < today : false,
+    // "Happening now" is date-based: today falls within [start, end] inclusive.
+    // (ZollTool's 'active' status only marks the device's current sell event, not
+    // whether the event is actually running today.)
+    ongoing: startD && endD ? startD <= today && today <= endD : false,
   };
 }
 
