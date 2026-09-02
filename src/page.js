@@ -14,7 +14,11 @@ function range(start, end) {
   if (sy === ey) return `${sd} ${sm} – ${ed} ${em} ${sy}`;
   return `${sd} ${sm} ${sy} – ${ed} ${em} ${ey}`;
 }
-const place = (ev) => [ev.city, ev.country].filter(Boolean).map(h).join(', ');
+const place = (ev) => {
+  const loc = [ev.city, ev.country].filter(Boolean).map(h).join(', ');
+  // ev.flag is an emoji (regional-indicator pair) — safe to inject unescaped.
+  return ev.flag ? (loc ? `${ev.flag} ${loc}` : ev.flag) : loc;
+};
 
 const STYLE = `
 :root{--bg:#f7f8fa;--surface:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--accent:#10b981;--accent-ink:#065f46}

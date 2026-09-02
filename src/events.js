@@ -4,6 +4,8 @@
  * safe display fields are exposed — never transactions or financial data.
  */
 
+import { countryFlag } from './flags.js';
+
 function toDate(s) {
   return s ? new Date(`${s}T00:00:00`) : null;
 }
@@ -21,6 +23,7 @@ function publicOne(e, ovEvents, today) {
     end,
     city: e.venue?.city || '',
     country: e.venue?.country || '',
+    flag: countryFlag(e.venue?.country || ''),
     status: e.status || '',
     link: ov.link || '',
     hall: ov.hall || '',

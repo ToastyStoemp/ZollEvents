@@ -73,6 +73,7 @@ function widget(BASE) {
     var now = ev.status === 'active' ? '<span class="zev-now">Now</span>' : '';
     // Where — the point of the widget: country/city, then hall & booth if known.
     var loc = [ev.city, ev.country].filter(Boolean).map(esc).join(', ');
+    if (ev.flag) loc = loc ? ev.flag + ' ' + loc : ev.flag; // ev.flag is an emoji, safe as-is
     var extra = [];
     if (ev.hall) extra.push('Hall ' + esc(ev.hall));
     if (ev.booth) extra.push('Booth ' + esc(ev.booth));
